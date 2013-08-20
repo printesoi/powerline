@@ -2,15 +2,17 @@
 
 from powerline.lib.threaded import MultiRunnedThread
 from powerline.lib.file_watcher import create_file_watcher
+from copy import deepcopy
 
 from threading import Event, Lock
 from collections import defaultdict
 
 import json
+import codecs
 
 
 def open_file(path):
-	return open(path, 'r')
+	return codecs.open(path, encoding='utf-8')
 
 
 def load_json_config(config_file_path, load=json.load, open_file=open_file):
@@ -103,10 +105,10 @@ class ConfigLoader(MultiRunnedThread):
 	def load(self, path):
 		try:
 			# No locks: GIL does what we need
-			return self.loaded[path]
+			return deepcopy(self.loaded[path])
 		except KeyError:
 			r = self._load(path)
-			self.loaded[path] = r
+			self.loaded[path] = deepcopy(r)
 			return r
 
 	def update(self):
@@ -140,7 +142,7 @@ class ConfigLoader(MultiRunnedThread):
 					self.missing.pop(key)
 		for path in toload:
 			try:
-				self.loaded[path] = self._load(path)
+				self.loaded[path] = deepcopy(self._load(path))
 			except Exception as e:
 				self.exception('Error while loading {0}: {1}', path, str(e))
 
